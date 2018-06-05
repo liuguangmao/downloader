@@ -3,6 +3,8 @@ package com.gm.downloadlib;
 
 import android.app.Application;
 import android.content.Context;
+import android.text.TextUtils;
+import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -25,6 +27,7 @@ import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.Call;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -276,6 +279,10 @@ public class DownloadManager {
 
 
 		String fileName = downloadInfo.getName();
+		if(TextUtils.isEmpty(fileName)){
+			downloadInfo.setCompletedSize(0);
+			return downloadInfo;
+		}
 		long downloadLength = 0, contentLength = downloadInfo.getFileSize();
 		File file = new File(downloadInfo.getFilePath(), fileName);
 		File file1 = new File(downloadInfo.getFilePath());
@@ -341,6 +348,11 @@ public class DownloadManager {
 			downloadInfo.setStatus(DataBaseFiledParams.LOADING);
 			try {
 				Response response = call.execute();
+				if(TextUtils.isEmpty(downloadInfo.getName())){
+					String headerFileName = getHeaderFileName(response);
+					downloadInfo.setName(headerFileName);
+					Log.e("fileName",headerFileName+"--------");
+				}
 				String filePath = downloadInfo.getFilePath();
 				File downloadDirectory = new File(filePath);
 				if (!downloadDirectory.exists()) {
@@ -397,6 +409,37 @@ public class DownloadManager {
 			e.printStackTrace();
 		}
 		return Document.TOTAL_ERROR;
+	}
+
+	/**
+	 * 解析文件头
+	 * Content-Disposition:attachment;filename=FileName.txt
+	 * Content-Disposition: attachment; filename*="UTF-8''%E6%9B%BF%E6%8D%A2%E5%AE%9E%E9%AA%8C%E6%8A%A5%E5%91%8A.pdf"
+	 */
+	private static String getHeaderFileName(Response response) {
+		HttpUrl url = response.request().url();
+
+		String name;
+		String dispositionHeader = response.header("Content-Disposition");
+		if (!TextUtils.isEmpty(dispositionHeader)) {
+			dispositionHeader.replace("attachment;filename=", "");
+			dispositionHeader.replace("filename*=utf-8", "");
+			String[] strings = dispositionHeader.split("; ");
+			if (strings.length > 1) {
+				dispositionHeader = strings[1].replace("filename=", "");
+				dispositionHeader = dispositionHeader.replace("\"", "");
+				name = dispositionHeader;
+			}else{
+				name = dispositionHeader;
+			}
+		}else{
+			name = "";
+		}
+		if(TextUtils.isEmpty(name)){
+			List<String> strings = url.pathSegments();
+			name = strings.get(strings.size()-1);
+		}
+		return name;
 	}
 
 
