@@ -1,9 +1,10 @@
 # downloader
 安卓下载器 支持断点续传
+可自动获取文件名
 ```
 final DownloadManager instance = DownloadManager.getInstance(getApplication());
 		Document document = new Document();
-		document.setName("葫芦娃");
+		//document.setName("葫芦娃");
 		document.setId(1);
 		document.setUrl("http://apk500.bce.baidu-mgame.com/game/1338000/1338942/20180413120409_oem_5500044.apk?r=1");
 		File externalCacheDir = getExternalCacheDir();
